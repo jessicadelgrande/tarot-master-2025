@@ -4,12 +4,20 @@ import { Button } from "./GlobalStyles";
 import { SignInContext } from "./context/SignInContext";
 import { UserContext } from "./context/UserContext";
 import { v4 as uuid_v4 } from "uuid";
+import { SavedReading } from "../services/tarotService";
 
 const Profile = () => {
-	const { googleProfile } = useContext(SignInContext);
-	const { user, savedReadings, setReadingsFeed } = useContext(UserContext);
+	const signInContext = useContext(SignInContext);
+	const userContext = useContext(UserContext);
 
-	const onDeleteReading = (readingId) => {
+	if (!signInContext || !userContext) {
+		return <div>Loading...</div>;
+	}
+
+	const { googleProfile } = signInContext;
+	const { user, savedReadings, setReadingsFeed } = userContext;
+
+	const onDeleteReading = (readingId: string) => {
 		fetch(`${process.env.REACT_APP_API_URL}/users/${user}/${readingId}`, {
 			method: "PATCH",
 			body: JSON.stringify({
@@ -25,6 +33,8 @@ const Profile = () => {
 		setReadingsFeed(true);
 	};
 
+	const readings = Object.values(savedReadings);
+
 	return (
 		<>
 			<Wrapper>
@@ -35,12 +45,12 @@ const Profile = () => {
 						src={googleProfile.imageUrl}
 					/>
 					<ProfileDetailsWrapper>
-						<ProfileDetails>{googleProfile.name}</ProfileDetails>
+						<ProfileDetails>{googleProfile.givenName}</ProfileDetails>
 						<ProfileDetails>{googleProfile.email}</ProfileDetails>
 					</ProfileDetailsWrapper>
 				</ProfileWrapper>
 				<SavedWrapper>
-					{savedReadings.length === 0 || savedReadings.cardName === "" ? (
+					{readings.length === 0 ? (
 						<NoReadingsText>
 							You don't have any saved readings yet.
 						</NoReadingsText>
@@ -48,53 +58,22 @@ const Profile = () => {
 						<>
 							<SectionLabel>Your Saved Readings</SectionLabel>
 							<ReadingsOuterUL>
-								{savedReadings.map((reading) => {
+								{readings.map((reading: SavedReading) => {
 									return (
-										<React.Fragment key={uuid_v4()}>
-											<>
-												<ReadingsOuterLI>
-													<ReadingsInnerUL>
-														<ReadingsInnerLI>
-															<ReadingsImg
-																alt={`${reading.cardName}`}
-																src={reading.cardImage}
-															/>
-														</ReadingsInnerLI>
-														<ReadingsInnerLIWrapper>
-															<ReadingsInnerLI>
-																<ReadingsLabel>
-																	On {reading.date}, you asked:
-																</ReadingsLabel>
-																<ReadingsContent>
-																	{reading.question}
-																</ReadingsContent>
-															</ReadingsInnerLI>
-															<ReadingsInnerLI>
-																<ReadingsLabel>
-																	The tarot answered with:
-																</ReadingsLabel>
-																<ReadingsContent>
-																	{reading.cardName}
-																</ReadingsContent>
-															</ReadingsInnerLI>
-															<ReadingsInnerLI>
-																<ReadingsContent>
-																	{reading.description}
-																</ReadingsContent>
-															</ReadingsInnerLI>
-															<DeleteButton
-																key={uuid_v4()}
-																type="button"
-																onClick={() =>
-																	onDeleteReading(reading.readingId)
-																}
-															>
-																DELETE
-															</DeleteButton>
-														</ReadingsInnerLIWrapper>
-													</ReadingsInnerUL>
-												</ReadingsOuterLI>
-											</>
+										<React.Fragment key={reading.id}>
+											<ReadingsOuterLI>
+												<ReadingsInnerUL>
+													<ReadingsInnerLI>
+														<ReadingDate>{reading.date}</ReadingDate>
+													</ReadingsInnerLI>
+													<ReadingsInnerLI>
+														<ReadingNotes>{reading.notes}</ReadingNotes>
+													</ReadingsInnerLI>
+												</ReadingsInnerUL>
+												<DeleteButton onClick={() => onDeleteReading(reading.id)}>
+													Delete
+												</DeleteButton>
+											</ReadingsOuterLI>
 										</React.Fragment>
 									);
 								})}
@@ -225,4 +204,15 @@ const ReadingsImg = styled.img`
 
 const DeleteButton = styled(Button)`
 	margin-top: 16px;
+`;
+
+const ReadingDate = styled.p`
+	font-size: 1.2rem;
+	font-weight: 700;
+	margin-right: 8px;
+	white-space: nowrap;
+`;
+
+const ReadingNotes = styled.p`
+	font-size: 1.2rem;
 `;

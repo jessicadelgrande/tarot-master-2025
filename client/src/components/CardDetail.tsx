@@ -32,6 +32,8 @@ const CardDetail: React.FC<CardDetailProps> = (props) => {
 	const readingDate = d.toString().slice(4, 15);
 
 	const onSaveReading = () => {
+		if (!cardData) return;
+		
 		let newReadingId = uuid_v4();
 		fetch(`${process.env.REACT_APP_API_URL}/users/${user}`, {
 			method: "POST",
