@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button } from "./GlobalStyles";
 import { SignInContext } from "./context/SignInContext";
@@ -9,28 +9,45 @@ import { SavedReading } from "../services/tarotService";
 const Profile = () => {
 	const signInContext = useContext(SignInContext);
 	const userContext = useContext(UserContext);
+	const [savedReadings, setSavedReadings] = useState<{ [key: string]: SavedReading }>({});
+
+	useEffect(() => {
+		// Load readings from localStorage
+		const readings = JSON.parse(localStorage.getItem('tarot_readings') || '{}');
+		setSavedReadings(readings);
+	}, []);
 
 	if (!signInContext || !userContext) {
 		return <div>Loading...</div>;
 	}
 
 	const { googleProfile } = signInContext;
-	const { user, savedReadings, setReadingsFeed } = userContext;
+	const { user, setReadingsFeed } = userContext;
 
 	const onDeleteReading = (readingId: string) => {
-		fetch(`${process.env.REACT_APP_API_URL}/users/${user}/${readingId}`, {
-			method: "PATCH",
-			body: JSON.stringify({
-				readingId: readingId,
-			}),
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			},
-		})
-			.then((res) => {})
-			.then((json) => {});
+		// Get existing readings
+		const existingReadings = JSON.parse(localStorage.getItem('tarot_readings') || '{}');
+		
+		// Remove the reading
+		delete existingReadings[readingId];
+		
+		// Save back to localStorage
+		localStorage.setItem('tarot_readings', JSON.stringify(existingReadings));
+		
+		// Update state
+		setSavedReadings(existingReadings);
 		setReadingsFeed(true);
+	};
+
+	const onClearAllReadings = () => {
+		if (window.confirm('Are you sure you want to delete all your readings? This action cannot be undone.')) {
+			// Clear localStorage
+			localStorage.removeItem('tarot_readings');
+			
+			// Update state
+			setSavedReadings({});
+			setReadingsFeed(true);
+		}
 	};
 
 	const readings = Object.values(savedReadings);
@@ -57,6 +74,9 @@ const Profile = () => {
 					) : (
 						<>
 							<SectionLabel>Your Saved Readings</SectionLabel>
+							<ClearAllButton onClick={onClearAllReadings}>
+								Clear All Readings
+							</ClearAllButton>
 							<ReadingsOuterUL>
 								{readings.map((reading: SavedReading) => {
 									return (
@@ -215,4 +235,15 @@ const ReadingDate = styled.p`
 
 const ReadingNotes = styled.p`
 	font-size: 1.2rem;
+`;
+
+const ClearAllButton = styled(Button)`
+	background-color: #ff4444;
+	color: white;
+	border-color: #cc0000;
+	margin-bottom: 20px;
+	
+	&:hover {
+		background-color: #cc0000;
+	}
 `;

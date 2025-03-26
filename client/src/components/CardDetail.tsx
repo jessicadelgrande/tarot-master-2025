@@ -35,30 +35,23 @@ const CardDetail: React.FC<CardDetailProps> = (props) => {
 		if (!cardData) return;
 		
 		let newReadingId = uuid_v4();
-		fetch(`${process.env.REACT_APP_API_URL}/users/${user}`, {
-			method: "POST",
-			body: JSON.stringify({
-				user: user,
-				readingData: {
-					readingId: newReadingId,
-					question: question,
-					cardName: cardData.cardName,
-					cardImage: cardData.cardImage,
-					description: cardData.description,
-					date: readingDate,
-				},
-			}),
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			},
-		})
-			.then((res) => {
-				res.json();
-			})
-			.then((json) => {
-				setSaveReadingBtn("Reading saved!");
-			});
+		const readingData = {
+			id: newReadingId,
+			date: readingDate,
+			cards: [cardData],
+			notes: question
+		};
+
+		// Get existing readings
+		const existingReadings = JSON.parse(localStorage.getItem('tarot_readings') || '{}');
+		
+		// Add new reading
+		existingReadings[newReadingId] = readingData;
+		
+		// Save back to localStorage
+		localStorage.setItem('tarot_readings', JSON.stringify(existingReadings));
+		
+		setSaveReadingBtn("Reading saved!");
 		setDisable(true);
 		setReadingsFeed(true);
 	};
